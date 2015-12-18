@@ -353,8 +353,51 @@ def start(argv):
 		file.write('<vhost>'+x+'</vhost>')
 	file.write('</theHarvester>')
 	file.close
+	# Save to .json and .csv as well.
+	'''Added by Mannan for bitflipRT.
+	'''
+	import csv
+	import json
+	import os
+	import string
+	from os.path import join as pJoin
+	from passlib.hash import pbkdf2_sha512
+	import hashlib
+	# First filter undesired emails.
+	for email in all_emails:
+		emailSplit = email.split("@nreca.coop")[0]
+		if "." not in emailSplit: 
+			all_emails.remove(email)
+	# Get into firstname + lastname Json format.
+	emailJson = {}
+	fullNames = []
+	for email in all_emails:
+		emailSplit = email.split("@nreca.coop")[0]
+		try:
+			firstName = emailSplit.split(".")[0].title()
+			lastName = emailSplit.split(".")[1].title()
+			fullName = firstName + " " + lastName
+		except: fullName = emailSplit.title()
+		emailJson[fullName] = hashlib.sha224(email.lower()).hexdigest()
+		fullNames.append(fullName)
+	# Add manual entries.
+	if "nreca.coop" in word:
+		emailJson["Mannan Javid"] = hashlib.sha224("mannan.javid@nreca.coop").hexdigest()
+		emailJson["George Walker"] = hashlib.sha224("george.walker@nreca.coop").hexdigest()
+		emailJson["David Pinney"] = hashlib.sha224("david.pinney@nreca.coop").hexdigest()		
+	# Create directory directory.
+	destinationPath = pJoin(os.getcwd(), "harvestedEmails", word)
+	if not os.path.exists(destinationPath):
+		os.makedirs(destinationPath)		
+	# Write target json.
+	with open(pJoin(destinationPath, "targetsAllowed.json"),"w") as outFile:
+		json.dump(emailJson, outFile, indent = 4)	
+	# Write target emails and names.
+	targetsCSV = open(pJoin(destinationPath, "targetsEmails.csv"),'wb')
+	wr = csv.writer(targetsCSV, dialect='excel')
+	wr.writerow(fullNames)
+	wr.writerow(all_emails)
 
-		
 if __name__ == "__main__":
         try: start(sys.argv[1:])
 	except KeyboardInterrupt:
